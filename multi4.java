@@ -12,18 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// 
-//  multi4.java  -  GEU Online Complaint Management System
-//  Features:
-//    - Portal Selection Screen (Admin / Student / Register)
-//    - Role-Based Login with validation
-//    - Student Dashboard: Submit and track own complaints live
-//    - Admin Dashboard: Full moderation with stats strip and filter
-//    - Complaint Lifecycle: Pending to Accept/Reject/Block to Progress to Resolved
-//    - Blocked flow: Unblock resets to Pending
-//    - Admin notes pushed to student view in real-time
-//    - Glassmorphism UI with animated slideshow background
-// 
 public class multi4 extends JFrame {
 
     //Shared In-Memory Store for temporary use
@@ -34,7 +22,9 @@ public class multi4 extends JFrame {
     static final Color C_TEXT_MED   = new Color(200, 215, 240);
     static final double[] COL_WEIGHTS = {0.04, 0.08, 0.09, 0.07, 0.09, 0.36, 0.27};
     static final String USER_FILE = "users.txt";
-   
+
+    //given UI element into a transparent layout component
+    //to maintain the visual slideshow background behind text input cards.
     JPanel wrap(JComponent comp) {
     JPanel p = new JPanel(new BorderLayout());
     p.setOpaque(false);
@@ -42,6 +32,7 @@ public class multi4 extends JFrame {
     return p;
 }
 
+    //render descriptive info in custom UI list frames.
    JPanel cell(String text, int align, Font font, Color color) {
     JLabel lbl = new JLabel(text, align);
     lbl.setFont(font);
@@ -55,6 +46,7 @@ public class multi4 extends JFrame {
     return p;
 }
 
+    //save registration info in .txt file
     void saveUsers() {
     try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_FILE))) {
         for (String user : USER_DB.keySet()) {
@@ -66,6 +58,7 @@ public class multi4 extends JFrame {
     }
 }
 
+//in-memory authentication and authorization system
 void loadUsers() {
     try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
         String line;
@@ -82,7 +75,7 @@ void loadUsers() {
     }
 }
 
-
+//admin credentials
   static {
     USER_DB.put("admin", "1234");
     ROLE_DB.put("admin", "admin");
@@ -114,7 +107,7 @@ void loadUsers() {
     static final Font F_SMALL   = new Font("SansSerif",  Font.PLAIN, 12);
     static final Font F_MONO    = new Font("Monospaced", Font.BOLD,  14);
 
-    // Slideshow 
+    // Slideshow ( NOT USING RIGHT NOW )
     private final String[] IMAGE_PATHS = {
         "resources/image_8.png",  "resources/image_9.png",
         "resources/image_10.png", "resources/image_11.png",
@@ -123,19 +116,18 @@ void loadUsers() {
     final ArrayList<BufferedImage> bgImages = new ArrayList<>();
     int bgIndex = 0;
 
-    // ── Session ───────────────────────────────────────────────────
+    // Session 
     String sessionUser;
     String sessionRole;
 
-    // ── Root pane & timer ─────────────────────────────────────────
+    // Root pane & timer 
     BackgroundPanel root;
     Timer           slideTimer;
 
-    // ── Real-time sync callback ───────────────────────────────────
+    // Real-time sync callback 
     // Admin dashboard sets this; student dashboard reads it after submit.
     Runnable onComplaintsChanged = () -> {};
 
-    // ════════════════════════════════════════════════════════════════
     public multi4() {
         loadImages();
         loadUsers();
@@ -152,6 +144,7 @@ void loadUsers() {
         root.setLayout(new BorderLayout());
         setContentPane(root);
 
+        // timer for slideshow (NOT USING RIGHT NOW)
         slideTimer = new Timer(4000, e -> {
             if (!bgImages.isEmpty()) { bgIndex = (bgIndex + 1) % bgImages.size(); root.repaint(); }
         });
@@ -161,6 +154,7 @@ void loadUsers() {
         setVisible(true);
     }
 
+    // loading images (NOT USING RIGHT NOW)
     void loadImages() {
         for (String p : IMAGE_PATHS) {
             try { File f = new File(p); if (f.exists()) bgImages.add(ImageIO.read(f)); }
@@ -168,9 +162,7 @@ void loadUsers() {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  SCREEN 1 — PORTAL SELECTION
-    // ════════════════════════════════════════════════════════════════
+    // PORTAL SELECTION
     void showPortalSelection() {
         root.removeAll();
         root.setLayout(new GridBagLayout());

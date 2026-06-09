@@ -26,66 +26,11 @@ import java.util.stream.Collectors;
 // 
 public class javap extends JFrame {
 
-    //Shared In-Memory Store for temporary use
+    // Shared In-Memory Store
     static final HashMap<String, String> USER_DB    = new HashMap<>();
     static final HashMap<String, String> ROLE_DB    = new HashMap<>();
     static final ArrayList<Complaint>    COMPLAINTS = new ArrayList<>();
-    static final Color C_TEXT_LIGHT = new Color(230, 240, 255);
-    static final Color C_TEXT_MED   = new Color(200, 215, 240);
-    static final double[] COL_WEIGHTS = {0.04, 0.08, 0.09, 0.07, 0.09, 0.36, 0.27};
     static final String USER_FILE = "users.txt";
-   
-    JPanel wrap(JComponent comp) {
-        JPanel p = new JPanel(new BorderLayout());
-        p.setOpaque(false);
-        p.add(comp, BorderLayout.CENTER);
-        return p;
-    }
-
-    JPanel cell(String text, int align, Font font, Color color) {
-        JLabel lbl = new JLabel(text, align);
-        lbl.setFont(font);
-        lbl.setForeground(color);
-        lbl.setBorder(new EmptyBorder(0, 4, 0, 4)); 
-
-        JPanel p = new JPanel(new BorderLayout());
-        p.setOpaque(false);
-        p.add(lbl, BorderLayout.CENTER);
-
-        return p;
-    }
-
-    void saveUsers() {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_FILE))) {
-            for (String user : USER_DB.keySet()) {
-                bw.write(user + "|" + USER_DB.get(user));
-                bw.newLine();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    void loadUsers() {
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
-
-                if (parts.length == 2) {
-                    USER_DB.put(parts[0], parts[1]);
-                    ROLE_DB.put(parts[0], "student");   
-                }
-            }
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
-    static {
-        USER_DB.put("admin", "1234");
-        ROLE_DB.put("admin", "admin");
-    }
 
     // Colors and dimensions
     static final Color C_BG_DARK    = new Color(8,   15,  35);
@@ -110,7 +55,7 @@ public class javap extends JFrame {
     static final Font F_SMALL   = new Font("SansSerif",  Font.PLAIN, 12);
     static final Font F_MONO    = new Font("Monospaced", Font.BOLD,  14);
 
-    // Slideshow 
+    // Slideshow Background
     private final String[] IMAGE_PATHS = {
         "resources/image_8.png",  "resources/image_9.png",
         "resources/image_10.png", "resources/image_11.png",
@@ -120,16 +65,21 @@ public class javap extends JFrame {
     final ArrayList<BufferedImage> bgImages = new ArrayList<>();
     int bgIndex = 0;
 
-    // ── Session ───────────────────────────────────────────────────
+    // Session Management
     String sessionUser;
     String sessionRole;
 
-    // ── Root pane & timer ─────────────────────────────────────────
+    // Root pane & layout timer
     BackgroundPanel root;
     Timer           slideTimer;
 
-    // ── Real-time sync callback ───────────────────────────────────
+    // Real-time sync callback
     Runnable onComplaintsChanged = () -> {};
+
+    static {
+        USER_DB.put("admin", "1234");
+        ROLE_DB.put("admin", "admin");
+    }
 
     // ════════════════════════════════════════════════════════════════
     public javap() {
@@ -155,6 +105,32 @@ public class javap extends JFrame {
 
         showPortalSelection();
         setVisible(true);
+    }
+
+    void saveUsers() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_FILE))) {
+            for (String user : USER_DB.keySet()) {
+                bw.write(user + "|" + USER_DB.get(user));
+                bw.newLine();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    void loadUsers() {
+        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length == 2) {
+                    USER_DB.put(parts[0], parts[1]);
+                    ROLE_DB.put(parts[0], "student");   
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     void loadImages() {
@@ -377,52 +353,6 @@ public class javap extends JFrame {
         root.revalidate(); root.repaint();
     }
 
-    void showChangePassword() {
-        JPasswordField oldPass  = styledPass();
-        JPasswordField newPass  = styledPass();
-        JPasswordField confPass = styledPass();
-
-        JPanel panel = new JPanel(new GridLayout(6, 1, 5, 5));
-        panel.add(new JLabel("Current Password:"));
-        panel.add(oldPass);
-        panel.add(new JLabel("New Password:"));
-        panel.add(newPass);
-        panel.add(new JLabel("Confirm New Password:"));
-        panel.add(confPass);
-
-        int result = JOptionPane.showConfirmDialog(this, panel,
-            "Change Password", JOptionPane.OK_CANCEL_OPTION);
-
-        if (result == JOptionPane.OK_OPTION) {
-            String old = new String(oldPass.getPassword());
-            String nw  = new String(newPass.getPassword());
-            String cf  = new String(confPass.getPassword());
-
-            if (old.isEmpty() || nw.isEmpty() || cf.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "All fields are required.");
-                return;
-            }
-            if (!USER_DB.get(sessionUser).equals(old)) {
-                JOptionPane.showMessageDialog(this, "Current password is incorrect!");
-                return;
-            }
-            if (nw.equals(old)) {
-                JOptionPane.showMessageDialog(this, "New password cannot be same as current!");
-                return;
-            }
-            if (!nw.equals(cf)) {
-                JOptionPane.showMessageDialog(this, "New passwords do not match!");
-                return;
-            }
-            if (nw.length() < 4) {
-                JOptionPane.showMessageDialog(this, "Password must be at least 4 characters.");
-                return;
-            }
-            USER_DB.put(sessionUser, nw);
-            JOptionPane.showMessageDialog(this, "Password changed successfully!");
-        }
-    }
-
     //  SCREEN 4 - STUDENT DASHBOARD
     void showStudentDashboard() {
         root.removeAll();
@@ -434,7 +364,7 @@ public class javap extends JFrame {
         split.setOpaque(false); split.setBorder(null);
         split.setDividerLocation(0.46); split.setResizeWeight(0.46);
 
-        // ── Left: submission form ────────────────────────────────
+        // Left Panel: Form Submission
         JPanel leftPanel = new JPanel(new BorderLayout(0, 14));
         leftPanel.setBackground(C_BG_MID);
         leftPanel.setOpaque(true);
@@ -463,7 +393,7 @@ public class javap extends JFrame {
         leftPanel.add(subTitle, BorderLayout.NORTH);
         leftPanel.add(form,     BorderLayout.CENTER);
 
-        //    Right: my complaints board
+        // Right Panel: Tracking Board
         JPanel rightPanel = new JPanel(new BorderLayout(0, 10));
         rightPanel.setOpaque(false);
         rightPanel.setBorder(new EmptyBorder(28, 18, 28, 36));
@@ -512,7 +442,6 @@ public class javap extends JFrame {
             Complaint c = new Complaint(sessionUser, txt, category);
 
             COMPLAINTS.add(c);
-
             FileDatabase.saveAll(COMPLAINTS);  
             area.setText("");
             JOptionPane.showMessageDialog(this, "✔ Complaint #" + c.getId() + " submitted!");
@@ -710,7 +639,6 @@ public class javap extends JFrame {
             JPanel p = new JPanel(new BorderLayout());
             p.setOpaque(false);
             p.add(h, BorderLayout.CENTER);
-
             row.add(p);
         }
         return row;
@@ -747,7 +675,7 @@ public class javap extends JFrame {
         statusPanel.add(statusBadge(c.getStatus()));
         row.add(statusPanel);
 
-        // COMPLAINT
+        // COMPLAINT PREVIEW
         String prev = c.getText().length() > 65
             ? c.getText().substring(0, 62) + "..."
             : c.getText();
@@ -828,7 +756,6 @@ public class javap extends JFrame {
                 "Are you sure you want to logout?",
                 "Logout",
                 JOptionPane.YES_NO_OPTION);
-
             if (confirm == JOptionPane.YES_OPTION) {
                 logout.run();
             }
@@ -857,7 +784,6 @@ public class javap extends JFrame {
 
     // Component Factories
     static JLabel lbl(String t, Font f, Color c)  { JLabel l=new JLabel(t); l.setFont(f); l.setForeground(c); return l; }
-    static JLabel ctrLbl(String t, Font f, Color c){ JLabel l=lbl(t,f,c); l.setHorizontalAlignment(JLabel.CENTER); return l; }
     static JLabel fieldLbl(String t) { return lbl(t, F_SMALL, C_TEXT_DIM); }
 
     static JTextField styledField() {
@@ -996,8 +922,6 @@ public class javap extends JFrame {
     public static void main(String[] args) {
         try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
         catch (Exception ignored) {}
-        
-        // Removed conflicting global overrides that were forcing light backgrounds on focus!
         SwingUtilities.invokeLater(javap::new);
     }
 }

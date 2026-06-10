@@ -542,7 +542,7 @@ public class javap extends JFrame {
             if (shown.isEmpty()) {
                 JLabel none = lbl("No complaints match this filter.", F_BODY, C_TEXT_DIM);
                 none.setAlignmentX(Component.CENTER_ALIGNMENT);
-                tableContainer.add(Box.createVerticalStrut(28));
+                tableContainer.add(Box.createVerticalStrut(28)); 
                 tableContainer.add(none);
             }
 
